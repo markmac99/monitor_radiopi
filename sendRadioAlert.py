@@ -30,6 +30,7 @@ def checkAndSend(lastupdatedt):
     except Exception:
         pass
     if laststate == 0 and delay > MAXDELAY:
+        log.warning('Radiopi has stalled')
         try:
             sendAnEmail('mark.jm.mcintyre@cesmail.net', 'Radiopi Stalled', 'Radiopi Alert', 'noreply@thelinux')
             open(LASTSTATEFILE, 'w').write('1')
