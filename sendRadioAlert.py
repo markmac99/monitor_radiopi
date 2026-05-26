@@ -24,22 +24,31 @@ def checkAndSend(lastupdatedt):
     upddt = datetime.datetime.strptime(lastupdatedt, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=datetime.timezone.utc)
     delay = (datetime.datetime.now(tz=datetime.timezone.utc) - upddt).seconds
     laststate = 0
-    try:
-        if os.path.isfile('laststate.txt'):
-            laststate = int(open(LASTSTATEFILE, 'r').readlines()[0].strip())
-    except Exception:
-        pass
-    if laststate == 0 and delay > MAXDELAY:
-        log.warning('Radiopi has stalled')
-        try:
-            sendAnEmail('mark.jm.mcintyre@cesmail.net', 'Radiopi Stalled', 'Radiopi Alert', 'noreply@thelinux')
+    if os.path.isfile(LASTSTATEFILE):
+        laststate = int(open(LASTSTATEFILE, 'r').readlines()[0].strip())
+    if delay > MAXDELAY:
+        if laststate == 0:
+            log.warning('Radiopi has stalled')
+            try:
+                msg = f'Radiopi Stalled with last update at {lastupdatedt}'
+                sendAnEmail('mark.jm.mcintyre@cesmail.net', msg, 'Radiopi Alert', 'noreply@thelinux')
+            except Exception as e:
+                log.warning('problem connecting to gmail')
+                log.warning(e)
             open(LASTSTATEFILE, 'w').write('1')
-        except Exception as e:
-            log.warning('problem connecting to gmail')
-            log.warning(e)
-    else:
-        log.info(f'all ok at {lastupdatedt}')
-        open(LASTSTATEFILE, 'w').write('0')
+        else:
+            # we already alerted so no need to send an email
+            log.warning('still stalled')        
+    else: 
+        log.info(f'all ok')
+        # not delayed - only notify if the previous state was stalled
+        if laststate == 1:
+            try:
+                sendAnEmail('mark.jm.mcintyre@cesmail.net', 'Radiopi error cleared', 'Radiopi ok', 'noreply@thelinux')
+            except Exception as e:
+                log.warning('problem connecting to gmail')
+                log.warning(e)
+            open(LASTSTATEFILE, 'w').write('0')
     return 
 
 
